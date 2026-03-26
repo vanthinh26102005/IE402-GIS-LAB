@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BTTH1 GeoJSON Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <style>
+    :root {
+      --paper: #f7f3eb;
+      --ink: #1f2328;
+      --muted: #5c6470;
+      --panel: rgba(255, 252, 247, 0.94);
+      --border: rgba(31, 35, 40, 0.12);
+      --province: #14532d;
+      --road: #b45309;
+      --school: #1d4ed8;
+      --shadow: 0 18px 44px rgba(29, 41, 57, 0.14);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Be Vietnam Pro", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(20, 83, 45, 0.18), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(29, 78, 216, 0.14), transparent 28%),
+        linear-gradient(135deg, #f5efe2 0%, #efe7d8 100%);
+    }
+
+    body {
+      padding: 18px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px minmax(0, 1fr);
+      gap: 18px;
+      height: calc(100vh - 36px);
+    }
+
+    .panel,
+    .map-shell {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .hero {
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(31, 35, 40, 0.06);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.05;
+    }
+
+    .summary,
+    .hint {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .filter-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(31, 35, 40, 0.06);
+      color: var(--ink);
+      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .filter-btn.is-active {
+      color: #fff;
+      background: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      padding: 0 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .action-btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: #18212a;
+    }
+
+    .action-btn.secondary {
+      background: rgba(24, 33, 42, 0.1);
+      color: #18212a;
+    }
+
+    .sections {
+      padding: 14px 16px 18px;
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .section {
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.68);
+    }
+
+    .section[data-category="province"] {
+      border-left: 6px solid var(--province);
+    }
+
+    .section[data-category="road"] {
+      border-left: 6px solid var(--road);
+    }
+
+    .section[data-category="school"] {
+      border-left: 6px solid var(--school);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .section-meta {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .section-badge {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .section-badge[data-category="province"] {
+      background: var(--province);
+    }
+
+    .section-badge[data-category="road"] {
+      background: var(--road);
+    }
+
+    .section-badge[data-category="school"] {
+      background: var(--school);
+    }
+
+    .layer-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .layer-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(249, 246, 239, 0.92);
+      border: 1px solid rgba(31, 35, 40, 0.08);
+      align-items: start;
+    }
+
+    .layer-toggle {
+      margin-top: 4px;
+      width: 16px;
+      height: 16px;
+      accent-color: #18212a;
+    }
+
+    .layer-name {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .layer-path,
+    .layer-meta-detail {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .layer-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .tool-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      box-shadow: 0 0 0 1px rgba(31, 35, 40, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .info-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      background: rgba(24, 33, 42, 0.08);
+      color: #18212a;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .info-btn.is-open {
+      background: #18212a;
+      color: #fff;
+    }
+
+    .zoom-btn {
+      padding: 0;
+      font-size: 12px;
+      color: #18212a;
+      background: transparent;
+    }
+
+    .layer-info {
+      grid-column: 1 / -1;
+      margin-top: 2px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(31, 35, 40, 0.08);
+    }
+
+    .layer-info-title,
+    .layer-info-note {
+      margin: 0 0 8px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .layer-info-title {
+      font-weight: 800;
+      color: #18212a;
+    }
+
+    .layer-info-note {
+      color: var(--muted);
+    }
+
+    .map-shell {
+      position: relative;
+      min-height: 520px;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .legend {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 500;
+      display: grid;
+      gap: 8px;
+      min-width: 180px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(24, 33, 42, 0.82);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .legend-title {
+      margin: 0 0 2px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
+    .popup-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+
+    .popup-table th,
+    .popup-table td {
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .popup-table th {
+      width: 38%;
+      font-weight: 800;
+    }
+
+    .sidebar-table {
+      width: 100%;
+    }
+
+    .school-logo-marker {
+      background: transparent;
+      border: 0;
+    }
+
+    .school-logo-badge {
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 2px solid rgba(29, 78, 216, 0.18);
+      box-shadow: 0 10px 20px rgba(29, 78, 216, 0.18);
+      overflow: hidden;
+    }
+
+    .school-logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 12px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .panel {
+        min-height: 48vh;
+      }
+
+      .map-shell {
+        min-height: 68vh;
+      }
+
+      .legend {
+        top: auto;
+        bottom: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <aside class="panel">
+      <div class="hero">
+        <span class="eyebrow">BTTH1 GIS Viewer</span>
+        <h1>Phân tách dữ liệu theo bài</h1>
+        <p id="summary" class="summary">Đang tải danh sách lớp dữ liệu...</p>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-btn is-active" type="button" data-filter="all">Tất cả</button>
+        <button class="filter-btn" type="button" data-filter="province">Tỉnh</button>
+        <button class="filter-btn" type="button" data-filter="road">Đường</button>
+        <button class="filter-btn" type="button" data-filter="school">Trường</button>
+      </div>
+
+      <div class="actions">
+        <button id="show-visible" class="action-btn" type="button">Bật nhóm đang lọc</button>
+        <button id="hide-visible" class="action-btn secondary" type="button">Tắt nhóm đang lọc</button>
+      </div>
+
+      <div id="sections" class="sections"></div>
+
+      <div class="hero">
+        <!-- <p class="hint">Mở bằng `Live Server` hoặc chạy `python3 -m http.server` để trang đọc được các file `GeoJSON` bằng `fetch()`.</p> -->
+      </div>
+    </aside>
+
+    <section class="map-shell">
+      <div id="map"></div>
+      <div class="legend">
+        <p class="legend-title">Nhóm Dữ Liệu</p>
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: var(--province);"></span>
+          <span>Bài 1: Tỉnh</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: var(--road);"></span>
+          <span>Bài 2: Đường</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: var(--school);"></span>
+          <span>Bài 3: Trường</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.14/dist/esri-leaflet.js"></script>
+  <script>
+    const groups = [
+      {
+        id: 'bai1',
+        title: 'Bài 1',
+        subtitle: 'Tỉnh',
+        category: 'province',
+        color: '#14532d',
+        files: [
+          { path: 'bai_1_ve_tinh/nam_bo.geojson' }
+        ]
+      },
+      {
+        id: 'bai2',
+        title: 'Bài 2',
+        subtitle: 'Đường',
+        category: 'road',
+        color: '#b45309',
+        files: [
+          { path: 'bai_2_ve_duong/ct_01.geojson' },
+          { path: 'bai_2_ve_duong/ct_28.geojson' },
+          { path: 'bai_2_ve_duong/ct_29.geojson' },
+          { path: 'bai_2_ve_duong/ct_40.geojson' },
+          { path: 'bai_2_ve_duong/ql_13.geojson' },
+          { path: 'bai_2_ve_duong/ql_22b.geojson' },
+          { path: 'bai_2_ve_duong/ql_56.geojson' },
+          { path: 'bai_2_ve_duong/ql_57.geojson' },
+          { path: 'bai_2_ve_duong/ql_22.geojson' },
+          { path: 'bai_2_ve_duong/ql_50.geojson' },
+          { path: 'bai_2_ve_duong/ql_51.geojson' },
+          { path: 'bai_2_ve_duong/ql_55.geojson' },
+          { path: 'bai_2_ve_duong/ql_62.geojson' },
+          { path: 'bai_2_ve_duong/ql_60.geojson' }
+        ]
+      },
+      {
+        id: 'bai3',
+        title: 'Bài 3',
+        subtitle: 'Trường',
+        category: 'school',
+        color: '#1d4ed8',
+        files: [
+          { path: 'bai_3_ve_truong/dg_ca_mau.geojson' },
+          { path: 'bai_3_ve_truong/dh_an_giang.geojson' },
+          { path: 'bai_3_ve_truong/dh_brvt_cs_1_2_3.geojson' },
+          { path: 'bai_3_ve_truong/dh_brvt.geojson' },
+          { path: 'bai_3_ve_truong/dh_bac_lieu.geojson' },
+          { path: 'bai_3_ve_truong/dh_cn.geojson' },
+          { path: 'bai_3_ve_truong/dh_cntt.geojson' },
+          { path: 'bai_3_ve_truong/dh_dong_thap.geojson' },
+          { path: 'bai_3_ve_truong/dh_kg.geojson' },
+          { path: 'bai_3_ve_truong/dh_spkt.geojson' },
+          { path: 'bai_3_ve_truong/dh_td.geojson' },
+          { path: 'bai_3_ve_truong/dh_tdm.geojson' },
+          { path: 'bai_3_ve_truong/dh_tg.geojson' }
+        ]
+      }
+    ];
+
+    const roadPalette = [
+      '#c5661a', '#0f766e', '#2563eb', '#be123c', '#7c3aed', '#4d7c0f',
+      '#0f766e', '#b45309', '#0369a1', '#a21caf', '#15803d', '#c2410c',
+      '#1d4ed8', '#b91c1c'
+    ];
+
+    const map = L.map('map', {
+      preferCanvas: true,
+      zoomControl: true
+    }).setView([10.6, 106.3], 8);
+
+    const esriBasemap = L.esri.basemapLayer('Topographic', {
+      detectRetina: true
+    });
+    esriBasemap.addTo(map);
+
+    const sectionsEl = document.getElementById('sections');
+    const summaryEl = document.getElementById('summary');
+    const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+
+    let activeFilter = 'all';
+    const sectionRegistry = [];
+    const layerRegistry = [];
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function getGeometryType(data) {
+      const feature = Array.isArray(data.features) ? data.features[0] : null;
+      return feature && feature.geometry ? feature.geometry.type : 'Unknown';
+    }
+
+    function buildPopup(properties) {
+      const entries = Object.entries(properties || {}).filter(([key, value]) => {
+        return key !== 'Logo' && value !== null && value !== '';
+      });
+      if (!entries.length) {
+        return '<p>Không có thuộc tính.</p>';
+      }
+
+      const rows = entries.map(([key, value]) => {
+        return `<tr><th>${escapeHtml(key)}</th><td>${escapeHtml(value)}</td></tr>`;
+      }).join('');
+
+      return `<table class="popup-table">${rows}</table>`;
+    }
+
+    function buildSidebarInfo(entry) {
+      const entries = Object.entries(entry.previewProperties || {}).filter(([key, value]) => {
+        return key !== 'Logo' && value !== null && value !== '';
+      });
+      if (!entries.length) {
+        return '<p class="layer-info-note">Không có thuộc tính để hiển thị.</p>';
+      }
+
+      const rows = entries.map(([key, value]) => {
+        return `<tr><th>${escapeHtml(key)}</th><td>${escapeHtml(value)}</td></tr>`;
+      }).join('');
+
+      const note = entry.featureCount > 1
+        ? '<p class="layer-info-note">Thông tin bên dưới là mẫu từ đối tượng đầu tiên của lớp này.</p>'
+        : '';
+
+      return `
+        <p class="layer-info-title">Thông tin nhanh</p>
+        ${note}
+        <table class="popup-table sidebar-table">${rows}</table>
+      `;
+    }
+
+    function getLayerColor(group, fileIndex) {
+      if (group.category === 'road') {
+        return roadPalette[fileIndex % roadPalette.length];
+      }
+      return group.color;
+    }
+
+    function getLayerLabel(group, previewProperties, file, featureCount) {
+      if (group.category === 'province') {
+        return `${featureCount} tỉnh Nam Bộ`;
+      }
+
+      return previewProperties['Tên tuyến hiển thị']
+        || previewProperties['Tên tỉnh']
+        || previewProperties['Tên trường']
+        || previewProperties['TenTruong']
+        || file.path.split('/').pop().replace(/\.geojson$/i, '');
+    }
+
+    function createSchoolIcon(logo, label) {
+      return L.divIcon({
+        className: 'school-logo-marker',
+        html: `
+          <div class="school-logo-badge">
+            <img src="${logo}" alt="${escapeHtml(label || 'Logo trường')}">
+          </div>
+        `,
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -18]
+      });
+    }
+
+    function styleFor(color, geometryType) {
+      if (geometryType.includes('Polygon')) {
+        return {
+          color,
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 0.18
+        };
+      }
+
+      return {
+        color,
+        weight: 3,
+        opacity: 0.9
+      };
+    }
+
+    function createSchoolLogoLayer(data) {
+      const iconLayer = L.layerGroup();
+
+      for (const feature of data.features || []) {
+        const properties = feature.properties || {};
+        const geometryType = feature.geometry?.type || '';
+        if (!properties.Logo || !geometryType.includes('Polygon')) {
+          continue;
+        }
+
+        const tempLayer = L.geoJSON(feature);
+        const bounds = tempLayer.getBounds();
+        if (!bounds.isValid()) {
+          continue;
+        }
+
+        const center = bounds.getCenter();
+        const marker = L.marker(center, {
+          icon: createSchoolIcon(properties.Logo, properties['Tên trường'])
+        });
+        marker.bindPopup(buildPopup(properties));
+        iconLayer.addLayer(marker);
+      }
+
+      return iconLayer.getLayers().length ? iconLayer : null;
+    }
+
+    function makeSection(group) {
+      const section = document.createElement('section');
+      section.className = 'section';
+      section.dataset.category = group.category;
+      section.dataset.groupId = group.id;
+
+      const header = document.createElement('div');
+      header.className = 'section-header';
+
+      const left = document.createElement('div');
+      const title = document.createElement('p');
+      title.className = 'section-title';
+      title.textContent = `${group.title} - ${group.subtitle}`;
+
+      const meta = document.createElement('p');
+      meta.className = 'section-meta';
+      meta.textContent = `${group.files.length} file GeoJSON`;
+
+      left.append(title, meta);
+
+      const badge = document.createElement('span');
+      badge.className = 'section-badge';
+      badge.dataset.category = group.category;
+      badge.textContent = group.subtitle;
+
+      header.append(left, badge);
+
+      const list = document.createElement('div');
+      list.className = 'layer-list';
+
+      section.append(header, list);
+      sectionsEl.appendChild(section);
+
+      const sectionEntry = { group, sectionEl: section, listEl: list };
+      sectionRegistry.push(sectionEntry);
+      return sectionEntry;
+    }
+
+    function addLayerCard(sectionEntry, layerEntry) {
+      const item = document.createElement('article');
+      item.className = 'layer-item';
+      item.dataset.category = layerEntry.group.category;
+
+      const toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.className = 'layer-toggle';
+      toggle.checked = true;
+
+      const body = document.createElement('div');
+
+      const name = document.createElement('p');
+      name.className = 'layer-name';
+      name.textContent = layerEntry.label;
+
+      const path = document.createElement('p');
+      path.className = 'layer-path';
+      path.textContent = layerEntry.path;
+
+      const meta = document.createElement('p');
+      meta.className = 'layer-meta-detail';
+      meta.textContent = `${layerEntry.featureCount} đối tượng | ${layerEntry.geometryType}`;
+
+      body.append(name, path, meta);
+
+      const tools = document.createElement('div');
+      tools.className = 'layer-tools';
+
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.backgroundColor = layerEntry.color;
+
+      const zoomBtn = document.createElement('button');
+      zoomBtn.type = 'button';
+      zoomBtn.className = 'tool-btn zoom-btn';
+      zoomBtn.textContent = 'Zoom';
+      zoomBtn.addEventListener('click', () => {
+        if (layerEntry.bounds && layerEntry.bounds.isValid()) {
+          map.fitBounds(layerEntry.bounds, { padding: [28, 28] });
+        }
+      });
+
+      tools.append(swatch);
+      if (layerEntry.group.category !== 'province') {
+        const infoBtn = document.createElement('button');
+        infoBtn.type = 'button';
+        infoBtn.className = 'tool-btn info-btn';
+        infoBtn.textContent = 'i';
+        infoBtn.title = 'Xem thông tin nhanh';
+
+        const infoPanel = document.createElement('div');
+        infoPanel.className = 'layer-info hidden';
+        infoPanel.innerHTML = buildSidebarInfo(layerEntry);
+
+        infoBtn.addEventListener('click', () => {
+          const willOpen = infoPanel.classList.contains('hidden');
+          infoPanel.classList.toggle('hidden', !willOpen);
+          infoBtn.classList.toggle('is-open', willOpen);
+        });
+
+        tools.append(infoBtn);
+        item.appendChild(infoPanel);
+      }
+      tools.append(zoomBtn);
+      item.append(toggle, body, tools);
+      sectionEntry.listEl.appendChild(item);
+
+      toggle.addEventListener('change', () => {
+        if (toggle.checked) {
+          layerEntry.layer.addTo(map);
+          if (layerEntry.iconLayer) {
+            layerEntry.iconLayer.addTo(map);
+          }
+        } else {
+          map.removeLayer(layerEntry.layer);
+          if (layerEntry.iconLayer) {
+            map.removeLayer(layerEntry.iconLayer);
+          }
+        }
+        fitVisibleBounds();
+        updateSummary();
+      });
+
+      layerEntry.toggle = toggle;
+      layerEntry.cardEl = item;
+    }
+
+    function fitVisibleBounds() {
+      const bounds = L.latLngBounds([]);
+      layerRegistry.forEach((entry) => {
+        if (entry.toggle && entry.toggle.checked && entry.bounds && entry.bounds.isValid()) {
+          bounds.extend(entry.bounds);
+        }
+      });
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+      }
+    }
+
+    function updateSummary() {
+      const visibleOnMap = layerRegistry.filter((entry) => entry.toggle && entry.toggle.checked).length;
+      const visibleInFilter = layerRegistry.filter((entry) => {
+        return activeFilter === 'all' || entry.group.category === activeFilter;
+      }).length;
+      summaryEl.textContent = `${layerRegistry.length} lớp đã tải. Đang lọc ${visibleInFilter} lớp, hiển thị trên bản đồ ${visibleOnMap} lớp.`;
+    }
+
+    function applyFilter(filter) {
+      activeFilter = filter;
+
+      filterButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.filter === filter);
+      });
+
+      sectionRegistry.forEach((entry) => {
+        const matches = filter === 'all' || entry.group.category === filter;
+        entry.sectionEl.classList.toggle('hidden', !matches);
+      });
+
+      updateSummary();
+    }
+
+    async function loadLayer(group, file, sectionEntry, fileIndex) {
+      const response = await fetch(encodeURI(file.path));
+      if (!response.ok) {
+        throw new Error(`${file.path}: HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const geometryType = getGeometryType(data);
+      const color = getLayerColor(group, fileIndex);
+      const previewProperties = Array.isArray(data.features) && data.features.length
+        ? (data.features[0].properties || {})
+        : {};
+      const label = getLayerLabel(
+        group,
+        previewProperties,
+        file,
+        Array.isArray(data.features) ? data.features.length : 0
+      );
+      const layer = L.geoJSON(data, {
+        style: styleFor(color, geometryType),
+        pointToLayer(feature, latlng) {
+          if (group.category === 'school' && feature.properties && feature.properties.Logo) {
+            return L.marker(latlng, {
+              icon: createSchoolIcon(feature.properties.Logo, feature.properties['Tên trường'])
+            });
+          }
+          return L.circleMarker(latlng, {
+            radius: 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: color,
+            fillOpacity: 0.95
+          });
+        },
+        onEachFeature(feature, featureLayer) {
+          featureLayer.bindPopup(buildPopup(feature.properties));
+        }
+      }).addTo(map);
+
+      let iconLayer = null;
+      if (group.category === 'school') {
+        iconLayer = createSchoolLogoLayer(data);
+        if (iconLayer) {
+          iconLayer.addTo(map);
+        }
+      }
+
+      const bounds = layer.getBounds();
+      const entry = {
+        group,
+        path: file.path,
+        label,
+        color,
+        geometryType,
+        featureCount: Array.isArray(data.features) ? data.features.length : 0,
+        previewProperties,
+        layer,
+        iconLayer,
+        bounds
+      };
+
+      layerRegistry.push(entry);
+      addLayerCard(sectionEntry, entry);
+    }
+
+    async function bootstrap() {
+      const errors = [];
+
+      for (const group of groups) {
+        const sectionEntry = makeSection(group);
+        for (const [fileIndex, file] of group.files.entries()) {
+          try {
+            await loadLayer(group, file, sectionEntry, fileIndex);
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
+      }
+
+      fitVisibleBounds();
+      updateSummary();
+
+      if (errors.length) {
+        const errorBox = document.createElement('section');
+        errorBox.className = 'section';
+        errorBox.innerHTML = `
+          <div class="section-header">
+            <div>
+              <p class="section-title">Có file tải thất bại</p>
+              <p class="section-meta">${escapeHtml(errors.join(' | '))}</p>
+            </div>
+          </div>
+        `;
+        sectionsEl.prepend(errorBox);
+      }
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => applyFilter(button.dataset.filter));
+    });
+
+    document.getElementById('show-visible').addEventListener('click', () => {
+      layerRegistry.forEach((entry) => {
+        if (activeFilter === 'all' || entry.group.category === activeFilter) {
+          entry.toggle.checked = true;
+          entry.layer.addTo(map);
+          if (entry.iconLayer) {
+            entry.iconLayer.addTo(map);
+          }
+        }
+      });
+      fitVisibleBounds();
+      updateSummary();
+    });
+
+    document.getElementById('hide-visible').addEventListener('click', () => {
+      layerRegistry.forEach((entry) => {
+        if (activeFilter === 'all' || entry.group.category === activeFilter) {
+          entry.toggle.checked = false;
+          map.removeLayer(entry.layer);
+          if (entry.iconLayer) {
+            map.removeLayer(entry.iconLayer);
+          }
+        }
+      });
+      fitVisibleBounds();
+      updateSummary();
+    });
+
+    bootstrap();
+  </script>
+</body>
+</html>
