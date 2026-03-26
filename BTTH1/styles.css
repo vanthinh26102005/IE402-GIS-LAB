@@ -1,0 +1,456 @@
+:root {
+  --paper: #f7f3eb;
+  --ink: #1f2328;
+  --muted: #5c6470;
+  --panel: rgba(255, 252, 247, 0.94);
+  --border: rgba(31, 35, 40, 0.12);
+  --province: #14532d;
+  --road: #b45309;
+  --school: #1d4ed8;
+  --shadow: 0 18px 44px rgba(29, 41, 57, 0.14);
+  --radius: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: "Be Vietnam Pro", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(20, 83, 45, 0.18), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(29, 78, 216, 0.14), transparent 28%),
+    linear-gradient(135deg, #f5efe2 0%, #efe7d8 100%);
+}
+
+body {
+  padding: 18px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 18px;
+  height: calc(100vh - 36px);
+}
+
+.panel,
+.map-shell {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hero {
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 35, 40, 0.06);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.summary,
+.hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(31, 35, 40, 0.06);
+  color: var(--ink);
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.filter-btn:hover {
+  transform: translateY(-1px);
+}
+
+.filter-btn.is-active {
+  color: #fff;
+  background: var(--ink);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.action-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: #18212a;
+}
+
+.action-btn.secondary {
+  background: rgba(24, 33, 42, 0.1);
+  color: #18212a;
+}
+
+.sections {
+  padding: 14px 16px 18px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.section {
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.section[data-category="province"] {
+  border-left: 6px solid var(--province);
+}
+
+.section[data-category="road"] {
+  border-left: 6px solid var(--road);
+}
+
+.section[data-category="school"] {
+  border-left: 6px solid var(--school);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.section-meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.section-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.section-badge[data-category="province"] {
+  background: var(--province);
+}
+
+.section-badge[data-category="road"] {
+  background: var(--road);
+}
+
+.section-badge[data-category="school"] {
+  background: var(--school);
+}
+
+.layer-list {
+  display: grid;
+  gap: 10px;
+}
+
+.layer-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(249, 246, 239, 0.92);
+  border: 1px solid rgba(31, 35, 40, 0.08);
+  align-items: start;
+}
+
+.layer-toggle {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  accent-color: #18212a;
+}
+
+.layer-name {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.layer-path,
+.layer-meta-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.layer-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.tool-btn:hover {
+  transform: translateY(-1px);
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(31, 35, 40, 0.16);
+  flex: 0 0 auto;
+}
+
+.info-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: rgba(24, 33, 42, 0.08);
+  color: #18212a;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.info-btn.is-open {
+  background: #18212a;
+  color: #fff;
+}
+
+.zoom-btn {
+  padding: 0;
+  font-size: 12px;
+  color: #18212a;
+  background: transparent;
+}
+
+.layer-info {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(31, 35, 40, 0.08);
+}
+
+.layer-info-title,
+.layer-info-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.layer-info-title {
+  font-weight: 800;
+  color: #18212a;
+}
+
+.layer-info-note {
+  color: var(--muted);
+}
+
+.map-shell {
+  position: relative;
+  min-height: 520px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.legend {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 500;
+  display: grid;
+  gap: 8px;
+  min-width: 180px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(24, 33, 42, 0.82);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.legend-title {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.popup-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+
+.popup-table th,
+.popup-table td {
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.popup-table th {
+  width: 38%;
+  font-weight: 800;
+}
+
+.sidebar-table {
+  width: 100%;
+}
+
+.school-logo-marker {
+  background: transparent;
+  border: 0;
+}
+
+.school-logo-badge {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid rgba(29, 78, 216, 0.18);
+  box-shadow: 0 10px 20px rgba(29, 78, 216, 0.18);
+  overflow: hidden;
+}
+
+.school-logo-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  body {
+    padding: 12px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .panel {
+    min-height: 48vh;
+  }
+
+  .map-shell {
+    min-height: 68vh;
+  }
+
+  .legend {
+    top: auto;
+    bottom: 18px;
+  }
+}
