@@ -596,10 +596,11 @@
       zoomControl: true
     }).setView([10.6, 106.3], 8);
 
-    const esriBasemap = L.esri.basemapLayer('Topographic', {
+    const imageryBasemap = L.esri.basemapLayer('Imagery', {
       detectRetina: true
     });
-    esriBasemap.addTo(map);
+    imageryBasemap.addTo(map);
+    L.esri.basemapLayer('ImageryLabels').addTo(map);
 
     const sectionsEl = document.getElementById('sections');
     const summaryEl = document.getElementById('summary');
@@ -694,13 +695,14 @@
       });
     }
 
-    function styleFor(color, geometryType) {
+    function styleFor(color, geometryType, category = '') {
       if (geometryType.includes('Polygon')) {
+        const isProvince = category === 'province';
         return {
           color,
-          weight: 2,
+          weight: isProvince ? 2.4 : 2,
           fillColor: color,
-          fillOpacity: 0.18
+          fillOpacity: isProvince ? 0.42 : 0.18
         };
       }
 
@@ -919,7 +921,7 @@
         Array.isArray(data.features) ? data.features.length : 0
       );
       const layer = L.geoJSON(data, {
-        style: styleFor(color, geometryType),
+        style: styleFor(color, geometryType, group.category),
         pointToLayer(feature, latlng) {
           if (group.category === 'school' && feature.properties && feature.properties.Logo) {
             return L.marker(latlng, {
