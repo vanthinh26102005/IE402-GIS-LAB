@@ -354,6 +354,16 @@ h1 {
   backdrop-filter: blur(8px);
 }
 
+.leaflet-control-container .leaflet-top.leaflet-right {
+  top: auto;
+  bottom: 0;
+}
+
+.leaflet-control-container .leaflet-top.leaflet-right .leaflet-control {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
 .legend-title {
   margin: 0 0 2px;
   font-size: 12px;
