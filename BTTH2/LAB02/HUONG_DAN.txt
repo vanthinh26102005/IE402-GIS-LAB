@@ -30,7 +30,7 @@ File chính cần demo/nộp là:
   Kiểm tra model SketchUp tham chiếu đã export sang GLB.
   Trang này chỉ là tham chiếu, không phải demo chính.
 
-3. KIỂM TRA KHI DEMO
+3. DEMO
 --------------------------------------------------
 - Bản đồ 3D ArcGIS JS mở được.
 - Công trình nằm đúng khu vực Nhà hát Thành phố Hồ Chí Minh.
