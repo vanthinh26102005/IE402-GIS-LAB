@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nha Hat Thanh Pho - LoD3 Viewer</title>
+  <style>
+    :root {
+      --bg0: #f3efe7;
+      --bg1: #d7e2e9;
+      --ink: #1e2a39;
+      --panel: rgba(255, 252, 246, 0.88);
+      --accent: #bb4d2e;
+      --ok: #1d7f5c;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 20% 10%, var(--bg1), var(--bg0) 55%);
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    #panel {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      width: min(360px, calc(100% - 28px));
+      background: var(--panel);
+      border: 1px solid rgba(30, 42, 57, 0.18);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 8px 30px rgba(35, 46, 60, 0.16);
+      backdrop-filter: blur(6px);
+    }
+
+    #panel h1 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+
+    #panel p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    button {
+      border: 0;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 9px;
+      font-size: 12px;
+      padding: 7px 10px;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    button.alt {
+      background: var(--accent);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--ok);
+      white-space: pre-line;
+    }
+
+    #canvasWrap {
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="panel">
+      <h1>LoD3 Main Mass Check</h1>
+      <p>Model file: <b>NhaHat_ThanhPho_LoD3.gltf</b><br/>Use mouse to rotate, pan, and zoom.</p>
+      <div class="row">
+        <button id="fitBtn">Fit Model</button>
+        <button id="wireBtn" class="alt">Toggle Wireframe</button>
+      </div>
+      <div id="status">Loading model...</div>
+    </div>
+    <div id="canvasWrap"></div>
+  </div>
+
+  <script type="module">
+    const wrap = document.getElementById("canvasWrap");
+    const statusEl = document.getElementById("status");
+    const fitBtn = document.getElementById("fitBtn");
+    const wireBtn = document.getElementById("wireBtn");
+
+    function updateStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    async function importFrom(urls) {
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          return await import(url);
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError;
+    }
+
+    let THREE;
+    let OrbitControls;
+    let GLTFLoader;
+    try {
+      const [threeMod, controlsMod, loaderMod] = await Promise.all([
+        importFrom([
+          "https://esm.sh/three@0.167.1",
+          "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js"
+        ]),
+        importFrom([
+          "https://esm.sh/three@0.167.1/examples/jsm/controls/OrbitControls.js",
+          "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/controls/OrbitControls.js"
+        ]),
+        importFrom([
+          "https://esm.sh/three@0.167.1/examples/jsm/loaders/GLTFLoader.js",
+          "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/loaders/GLTFLoader.js"
+        ])
+      ]);
+      THREE = threeMod;
+      OrbitControls = controlsMod.OrbitControls;
+      GLTFLoader = loaderMod.GLTFLoader;
+    } catch (err) {
+      updateStatus("Cannot load 3D libraries from CDN. Check internet or firewall.\n" + String(err));
+      throw err;
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe9edf2);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 4000);
+    camera.position.set(70, 60, 70);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    wrap.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 10, 0);
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x6c7480, 0.8);
+    scene.add(hemi);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1.15);
+    dir.position.set(100, 140, 80);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(260, 26, 0x607183, 0x9cabbb);
+    grid.position.y = 0;
+    scene.add(grid);
+
+    let modelRoot = null;
+    let bbox = null;
+    let wireframeOn = false;
+
+    function fitCameraToModel() {
+      if (!bbox) return;
+      const size = bbox.getSize(new THREE.Vector3());
+      const center = bbox.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const distance = maxDim * 1.7;
+
+      camera.position.set(center.x + distance, center.y + distance * 0.75, center.z + distance);
+      camera.near = Math.max(0.01, maxDim / 1000);
+      camera.far = Math.max(1000, maxDim * 50);
+      camera.updateProjectionMatrix();
+
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    const loader = new GLTFLoader();
+    const baseDir = window.location.pathname.replace(/\/$/, "").replace(/[^/]*$/, "/");
+    const modelUrl = `${baseDir}NhaHat_ThanhPho_LoD3.gltf`;
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        modelRoot = gltf.scene;
+        scene.add(modelRoot);
+
+        bbox = new THREE.Box3().setFromObject(modelRoot);
+        const size = bbox.getSize(new THREE.Vector3());
+
+        let vertices = 0;
+        let triangles = 0;
+        modelRoot.traverse((obj) => {
+          if (obj.isMesh && obj.geometry) {
+            const pos = obj.geometry.getAttribute("position");
+            if (pos) vertices += pos.count;
+            if (obj.geometry.index) triangles += obj.geometry.index.count / 3;
+            else if (pos) triangles += pos.count / 3;
+          }
+        });
+
+        fitCameraToModel();
+
+        const h = size.y.toFixed(2);
+        updateStatus(
+          "Loaded OK\n" +
+          `BBox size (m): ${size.x.toFixed(2)} x ${h} x ${size.z.toFixed(2)}\n` +
+          `Vertices: ${vertices} | Triangles: ${Math.round(triangles)}`
+        );
+      },
+      undefined,
+      (err) => {
+        updateStatus("Load failed. Use Live Server and open from http://localhost (not file://).\n" + `Tried URL: ${modelUrl}\n` + String(err));
+      }
+    );
+
+    fitBtn.addEventListener("click", fitCameraToModel);
+
+    wireBtn.addEventListener("click", () => {
+      wireframeOn = !wireframeOn;
+      if (!modelRoot) return;
+      modelRoot.traverse((obj) => {
+        if (obj.isMesh && obj.material) {
+          obj.material.wireframe = wireframeOn;
+          obj.material.needsUpdate = true;
+        }
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
