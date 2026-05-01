@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GIS Lab 02 | Nhà hát Thành phố HCM LoD3</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.29/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #dce3ea;
+        color: #f7f9fb;
+      }
+
+      #hud {
+        width: min(360px, calc(100vw - 24px));
+        margin: 12px;
+        padding: 14px 16px 16px;
+        border-radius: 12px;
+        background: rgba(15, 23, 31, 0.9);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+        backdrop-filter: blur(8px);
+      }
+
+      #hud h1 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+
+      #hud p {
+        margin: 0 0 10px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #d3dde8;
+      }
+
+      .section-title {
+        margin: 12px 0 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8fb4db;
+      }
+
+      #filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .viewer-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .viewer-tabs a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        border: 1px solid rgba(143, 180, 219, 0.34);
+        border-radius: 8px;
+        color: #eef6ff;
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .viewer-tabs a:hover {
+        background: rgba(143, 180, 219, 0.22);
+      }
+
+      .viewer-tabs a.is-active {
+        border-color: rgba(255, 193, 112, 0.78);
+        background: rgba(214, 136, 42, 0.34);
+        color: #fff3df;
+      }
+
+      .filter-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .filter-item label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        cursor: pointer;
+        font-size: 13px;
+        color: #f5f8fb;
+      }
+
+      .filter-item input {
+        accent-color: #8fb4db;
+      }
+
+      .orbit-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .orbit-controls button {
+        min-height: 34px;
+        border: 1px solid rgba(143, 180, 219, 0.34);
+        border-radius: 8px;
+        background: rgba(143, 180, 219, 0.14);
+        color: #eef6ff;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .orbit-controls button:hover {
+        background: rgba(143, 180, 219, 0.24);
+      }
+
+      .orbit-controls button.is-active {
+        border-color: rgba(255, 193, 112, 0.78);
+        background: rgba(214, 136, 42, 0.34);
+        color: #fff3df;
+      }
+
+      #orbitStatus {
+        grid-column: 1 / -1;
+        min-height: 16px;
+        font-size: 11px;
+        color: #b8c6d6;
+      }
+
+      .count {
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: #b8c6d6;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .badge {
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(143, 180, 219, 0.16);
+        font-size: 11px;
+        font-weight: 600;
+        color: #d9e9fb;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+
+    <div id="hud">
+      <h1>Nhà hát Thành phố Hồ Chí Minh</h1>
+      <p>
+        Bài Lab 02 GIS dựng công trình bằng <strong>ArcGIS SceneView</strong>:
+        <strong>GraphicsLayer + Polygon + ExtrudeSymbol3DLayer</strong>, tách rõ khối chính,
+        mái, cửa, ban công và gờ nổi để mô hình đọc ra <strong>LoD 3</strong>.
+      </p>
+
+      <div class="section-title">Trang xem</div>
+      <nav class="viewer-tabs" aria-label="Chuyen trang viewer">
+        <a class="is-active" href="index.html">ArcGIS chính</a>
+        <a href="viewers/geojson_layer_check.html">GeoJSON</a>
+        <a href="viewers/gltf_lod3_check.html">glTF LoD3</a>
+        <a href="viewers/reference_model.html">Model tham chiếu</a>
+      </nav>
+
+      <div class="section-title">Bật / tắt từng nhóm LoD 3</div>
+      <div id="filters">
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="masses" checked /> Khối chính</label>
+          <span class="count" data-count="masses"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="annexes" checked /> Khối phụ</label>
+          <span class="count" data-count="annexes"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="roofs" checked /> Mái</label>
+          <span class="count" data-count="roofs"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="windows" checked /> Cửa sổ</label>
+          <span class="count" data-count="windows"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="doors" checked /> Cửa ra vào</label>
+          <span class="count" data-count="doors"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="balconies" checked /> Ban công</label>
+          <span class="count" data-count="balconies"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="cornices" checked /> Gờ nổi</label>
+          <span class="count" data-count="cornices"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-layer="details" checked /> Nhịp đứng mặt đứng</label>
+          <span class="count" data-count="details"></span>
+        </div>
+        <div class="filter-item">
+          <label><input type="checkbox" data-reference-layer="footprint" /> Footprint GeoJSON</label>
+          <span class="count">4 polygons</span>
+        </div>
+      </div>
+
+      <div class="section-title">Camera 360</div>
+      <div class="orbit-controls">
+        <button id="orbitToggle" type="button">Xoay 360</button>
+        <button id="orbitReset" type="button">Về góc demo</button>
+        <span id="orbitStatus">Sẵn sàng xoay quanh công trình.</span>
+      </div>
+
+      <div class="badge-row">
+        <span class="badge">Anchor: 10.7767065, 106.7032269</span>
+        <span class="badge">Data: GeoJSON + glTF + Shapefile</span>
+        <span class="badge" id="totalCount">0 graphics</span>
+      </div>
+    </div>
+
+    <script>
+      require(
+        [
+          "esri/Map",
+          "esri/views/SceneView",
+          "esri/layers/GraphicsLayer",
+          "esri/layers/GeoJSONLayer",
+          "esri/geometry/Polygon",
+          "esri/Graphic",
+          "esri/symbols/PolygonSymbol3D",
+          "esri/symbols/ExtrudeSymbol3DLayer",
+          "esri/symbols/edges/SolidEdges3D"
+        ],
+        (
+          EsriMap,
+          SceneView,
+          GraphicsLayer,
+          GeoJSONLayer,
+          Polygon,
+          Graphic,
+          PolygonSymbol3D,
+          ExtrudeSymbol3DLayer,
+          SolidEdges3D
+        ) => {
+          const site = {
+            longitude: 106.70322688781454,
+            latitude: 10.776706455665893
+          };
+
+          const baseElevation = 4.5;
+          const footprintMainAxisHeadingDeg = 42.9;
+          const buildingAxisHeading = (footprintMainAxisHeadingDeg * Math.PI) / 180;
+          const forward = {
+            east: Math.sin(buildingAxisHeading),
+            north: Math.cos(buildingAxisHeading)
+          };
+          const right = {
+            east: Math.sin(buildingAxisHeading + Math.PI / 2),
+            north: Math.cos(buildingAxisHeading + Math.PI / 2)
+          };
+
+          const colors = {
+            wall: [231, 220, 202, 0.98],
+            wallShadow: [214, 202, 184, 0.98],
+            trim: [246, 239, 228, 0.99],
+            trimShadow: [224, 214, 198, 0.98],
+            roof: [86, 94, 106, 0.99],
+            roofAccent: [110, 120, 132, 0.99],
+            glass: [61, 95, 120, 0.92],
+            glassShadow: [44, 66, 82, 0.88],
+            bronze: [116, 73, 47, 1],
+            stone: [184, 171, 151, 1],
+            rail: [224, 214, 200, 1]
+          };
+
+          const layerMeta = {
+            masses: { title: "Khoi chinh", count: 0 },
+            annexes: { title: "Khoi phu", count: 0 },
+            roofs: { title: "Mai", count: 0 },
+            windows: { title: "Cua so", count: 0 },
+            doors: { title: "Cua ra vao", count: 0 },
+            balconies: { title: "Ban cong", count: 0 },
+            cornices: { title: "Go noi", count: 0 },
+            details: { title: "Chi tiet mat dung", count: 0 }
+          };
+
+          const layerOrder = [
+            "masses",
+            "annexes",
+            "cornices",
+            "doors",
+            "windows",
+            "balconies",
+            "details",
+            "roofs"
+          ];
+
+          const modelLayers = {};
+          layerOrder.forEach((key) => {
+            modelLayers[key] = new GraphicsLayer({
+              elevationInfo: { mode: "absolute-height" },
+              title: layerMeta[key].title
+            });
+          });
+
+          const referenceFootprintLayer = new GeoJSONLayer({
+            url: "data/geojson/NhaHatThanhPho_footprint.geojson",
+            title: "Footprint GeoJSON tham chiếu",
+            visible: false,
+            elevationInfo: { mode: "on-the-ground" },
+            renderer: {
+              type: "simple",
+              symbol: {
+                type: "simple-fill",
+                color: [0, 140, 255, 0.18],
+                outline: {
+                  color: [0, 140, 255, 0.9],
+                  width: 1.5
+                }
+              }
+            },
+            popupTemplate: {
+              title: "{name}",
+              content: "<b>Layer:</b> {layer}<br><b>Height:</b> {height} m"
+            }
+          });
+
+          const map = new EsriMap({
+            basemap: "dark-gray-vector",
+            ground: "world-elevation",
+            layers: [referenceFootprintLayer, ...layerOrder.map((key) => modelLayers[key])]
+          });
+
+          const view = new SceneView({
+            container: "viewDiv",
+            map,
+            qualityProfile: "medium",
+            camera: {
+              position: {
+                longitude: 106.70272,
+                latitude: 10.77636,
+                z: 145
+              },
+              heading: footprintMainAxisHeadingDeg,
+              tilt: 72
+            },
+            environment: {
+              starsEnabled: false,
+              atmosphereEnabled: true,
+              lighting: {
+                directShadowsEnabled: true,
+                ambientOcclusionEnabled: true,
+                date: "2026-04-24T09:00:00+07:00"
+              }
+            }
+          });
+
+          view.ui.components = ["zoom", "compass", "attribution"];
+          view.ui.add("hud", "top-right");
+
+          const symbolCache = new globalThis.Map();
+
+          function metersToLongitude(metersEast) {
+            return metersEast / (111320 * Math.cos((site.latitude * Math.PI) / 180));
+          }
+
+          function metersToLatitude(metersNorth) {
+            return metersNorth / 110540;
+          }
+
+          function pointFromOffset(metersEast, metersNorth, absoluteZ) {
+            return {
+              type: "point",
+              longitude: site.longitude + metersToLongitude(metersEast),
+              latitude: site.latitude + metersToLatitude(metersNorth),
+              z: absoluteZ,
+              spatialReference: { wkid: 4326 }
+            };
+          }
+
+          function localPoint(forwardMeters, rightMeters, localZ) {
+            const east = forward.east * forwardMeters + right.east * rightMeters;
+            const north = forward.north * forwardMeters + right.north * rightMeters;
+            return [
+              site.longitude + metersToLongitude(east),
+              site.latitude + metersToLatitude(north),
+              baseElevation + localZ
+            ];
+          }
+
+          function rectangleRing(centerForward, centerRight, depth, width, localZ) {
+            const halfDepth = depth / 2;
+            const halfWidth = width / 2;
+            return [
+              localPoint(centerForward - halfDepth, centerRight - halfWidth, localZ),
+              localPoint(centerForward - halfDepth, centerRight + halfWidth, localZ),
+              localPoint(centerForward + halfDepth, centerRight + halfWidth, localZ),
+              localPoint(centerForward + halfDepth, centerRight - halfWidth, localZ),
+              localPoint(centerForward - halfDepth, centerRight - halfWidth, localZ)
+            ];
+          }
+
+          function getExtrudeSymbol(options) {
+            const key = JSON.stringify(options);
+            if (symbolCache.has(key)) {
+              return symbolCache.get(key);
+            }
+
+            const layerOptions = {
+              size: options.height,
+              material: { color: options.color }
+            };
+
+            if (options.edges !== false) {
+              layerOptions.edges = new SolidEdges3D({
+                size: options.edgeSize ?? 0.24,
+                color: options.edgeColor ?? [78, 68, 58, 0.42]
+              });
+            }
+
+            const symbol = new PolygonSymbol3D({
+              symbolLayers: [new ExtrudeSymbol3DLayer(layerOptions)]
+            });
+
+            symbolCache.set(key, symbol);
+            return symbol;
+          }
+
+          function addBox(config) {
+            const geometry = new Polygon({
+              rings: [
+                rectangleRing(
+                  config.centerForward,
+                  config.centerRight,
+                  config.depth,
+                  config.width,
+                  config.baseZ
+                )
+              ],
+              hasZ: true,
+              spatialReference: { wkid: 4326 }
+            });
+
+            const symbol = getExtrudeSymbol({
+              height: config.height,
+              color: config.color,
+              edgeColor: config.edgeColor,
+              edgeSize: config.edgeSize,
+              edges: config.edges
+            });
+
+            modelLayers[config.layerKey].add(
+              new Graphic({
+                geometry,
+                symbol,
+                attributes: {
+                  name: config.name,
+                  category: config.category,
+                  description: config.description,
+                  layer: config.layerKey
+                },
+                popupTemplate: {
+                  title: "{name}",
+                  content:
+                    "<b>Nhom:</b> {category}<br><b>Mo ta:</b> {description}<br><b>Layer:</b> {layer}"
+                }
+              })
+            );
+
+            layerMeta[config.layerKey].count += 1;
+          }
+
+          function addGroup(items) {
+            items.forEach(addBox);
+          }
+
+          function addFrontOpeningSeries(config) {
+            config.positions.forEach((centerRight) => {
+              addFrontOpening({ ...config, centerRight });
+            });
+          }
+
+          function addFrontOpening(config) {
+            addBox({
+              name: config.frameName ?? `${config.name} frame`,
+              category: config.category,
+              description: `${config.description} Frame bao quanh.`,
+              layerKey: config.layerKey,
+              centerForward: config.centerForward - 0.08,
+              centerRight: config.centerRight,
+              depth: config.frameDepth ?? config.depth + 0.45,
+              width: config.width + (config.frameWidthOffset ?? 0.7),
+              baseZ: config.baseZ - 0.18,
+              height: config.height + (config.frameHeightOffset ?? 0.36),
+              color: config.frameColor ?? colors.trim,
+              edgeColor: [175, 162, 145, 0.45],
+              edgeSize: 0.14
+            });
+
+            if (config.sillHeight !== 0) {
+              addBox({
+                name: config.sillName ?? `${config.name} sill`,
+                category: config.category,
+                description: `${config.description} Bo go / sill nhan de doc hinh ro hon.`,
+                layerKey: config.layerKey,
+                centerForward: config.centerForward - 0.12,
+                centerRight: config.centerRight,
+                depth: config.frameDepth ?? config.depth + 0.48,
+                width: config.width + 0.9,
+                baseZ: config.baseZ - 0.34,
+                height: config.sillHeight ?? 0.24,
+                color: config.frameColor ?? colors.trim,
+                edgeColor: [175, 162, 145, 0.42],
+                edgeSize: 0.12
+              });
+            }
+
+            if (config.headerHeight) {
+              addBox({
+                name: config.headerName ?? `${config.name} lintel`,
+                category: config.category,
+                description: `${config.description} Day lintel o phia tren de tang chieu sau LoD 3.`,
+                layerKey: config.layerKey,
+                centerForward: config.centerForward - 0.12,
+                centerRight: config.centerRight,
+                depth: config.frameDepth ?? config.depth + 0.5,
+                width: config.width + 1.0,
+                baseZ: config.baseZ + config.height,
+                height: config.headerHeight,
+                color: config.headerColor ?? colors.trimShadow,
+                edgeColor: [171, 157, 140, 0.42],
+                edgeSize: 0.12
+              });
+            }
+
+            addBox({
+              name: config.name,
+              category: config.category,
+              description: config.description,
+              layerKey: config.layerKey,
+              centerForward: config.centerForward,
+              centerRight: config.centerRight,
+              depth: config.depth,
+              width: config.width,
+              baseZ: config.baseZ,
+              height: config.height,
+              color: config.fillColor,
+              edgeColor: config.fillEdgeColor,
+              edgeSize: config.fillEdgeSize ?? 0.12
+            });
+          }
+
+          function addSideOpeningSeries(config) {
+            config.positions.forEach((centerForward) => {
+              addSideOpening({ ...config, centerForward });
+            });
+          }
+
+          function addSideOpening(config) {
+            addBox({
+              name: config.frameName ?? `${config.name} frame`,
+              category: config.category,
+              description: `${config.description} Frame bao quanh.`,
+              layerKey: config.layerKey,
+              centerForward: config.centerForward,
+              centerRight: config.centerRight,
+              depth: config.depth + (config.frameDepthOffset ?? 0.55),
+              width: config.width + (config.frameWidthOffset ?? 0.2),
+              baseZ: config.baseZ - 0.16,
+              height: config.height + 0.32,
+              color: config.frameColor ?? colors.trim,
+              edgeColor: [175, 162, 145, 0.42],
+              edgeSize: 0.12
+            });
+
+            addBox({
+              name: config.name,
+              category: config.category,
+              description: config.description,
+              layerKey: config.layerKey,
+              centerForward: config.centerForward,
+              centerRight: config.centerRight + config.insetOffset,
+              depth: config.depth,
+              width: config.width,
+              baseZ: config.baseZ,
+              height: config.height,
+              color: config.fillColor,
+              edgeColor: config.fillEdgeColor,
+              edgeSize: 0.12
+            });
+          }
+
+          // Same extrusion workflow as lab2/building, but grouped explicitly by LoD 3 criteria.
+          addGroup([
+            {
+              layerKey: "masses",
+              name: "Raised podium",
+              category: "base",
+              description: "De nen cong trinh de tach cong trinh khoi mat duong va tao bac them.",
+              centerForward: 4.5,
+              centerRight: 0,
+              depth: 74,
+              width: 50,
+              baseZ: 0,
+              height: 2.2,
+              color: colors.stone,
+              edgeSize: 0.2
+            },
+            {
+              layerKey: "masses",
+              name: "Central hall",
+              category: "main mass",
+              description: "Khoi nha hat chinh, dat sau mat dung trang tri.",
+              centerForward: -4,
+              centerRight: 0,
+              depth: 32,
+              width: 29,
+              baseZ: 2.2,
+              height: 18.2,
+              color: colors.wall
+            },
+            {
+              layerKey: "masses",
+              name: "Rear stage block",
+              category: "main mass",
+              description: "Khoi san khau phia sau cao hon de doc ra su phan cap khoi.",
+              centerForward: 20,
+              centerRight: 0,
+              depth: 34,
+              width: 24,
+              baseZ: 2.2,
+              height: 23.2,
+              color: colors.wallShadow
+            },
+            {
+              layerKey: "masses",
+              name: "Entrance pavilion",
+              category: "facade mass",
+              description: "Khoi sanh vao dua ra phia truoc, tranh mat dung phang.",
+              centerForward: -23.5,
+              centerRight: 0,
+              depth: 12,
+              width: 19,
+              baseZ: 2.2,
+              height: 13.4,
+              color: colors.trim
+            }
+          ]);
+
+          addGroup([
+            {
+              layerKey: "annexes",
+              name: "North front annex",
+              category: "annex",
+              description: "Khoi phu mat tien ben bac.",
+              centerForward: -12.5,
+              centerRight: -18,
+              depth: 21,
+              width: 11.5,
+              baseZ: 2.2,
+              height: 14.4,
+              color: colors.wall
+            },
+            {
+              layerKey: "annexes",
+              name: "South front annex",
+              category: "annex",
+              description: "Khoi phu mat tien ben nam.",
+              centerForward: -12.5,
+              centerRight: 18,
+              depth: 21,
+              width: 11.5,
+              baseZ: 2.2,
+              height: 14.4,
+              color: colors.wall
+            },
+            {
+              layerKey: "annexes",
+              name: "North rear annex",
+              category: "annex",
+              description: "Khoi phu hau can phia bac.",
+              centerForward: 20,
+              centerRight: -18,
+              depth: 23,
+              width: 9.5,
+              baseZ: 2.2,
+              height: 12.2,
+              color: colors.wallShadow
+            },
+            {
+              layerKey: "annexes",
+              name: "South rear annex",
+              category: "annex",
+              description: "Khoi phu hau can phia nam.",
+              centerForward: 20,
+              centerRight: 18,
+              depth: 23,
+              width: 9.5,
+              baseZ: 2.2,
+              height: 12.2,
+              color: colors.wallShadow
+            },
+            {
+              layerKey: "annexes",
+              name: "Rear service bay north",
+              category: "annex",
+              description: "Khoi dich vu thap de lam ro them bo cuc khoi phu.",
+              centerForward: 32,
+              centerRight: -7.5,
+              depth: 11,
+              width: 6.2,
+              baseZ: 2.2,
+              height: 8.6,
+              color: colors.wallShadow
+            },
+            {
+              layerKey: "annexes",
+              name: "Rear service bay south",
+              category: "annex",
+              description: "Khoi dich vu thap de lam ro them bo cuc khoi phu.",
+              centerForward: 32,
+              centerRight: 7.5,
+              depth: 11,
+              width: 6.2,
+              baseZ: 2.2,
+              height: 8.6,
+              color: colors.wallShadow
+            }
+          ]);
+
+          addGroup([
+            { layerKey: "masses", name: "Entrance stairs 1", category: "stairs", description: "Bac them thu nhat.", centerForward: -37.0, centerRight: 0, depth: 6.0, width: 26, baseZ: 0, height: 0.55, color: colors.stone, edgeSize: 0.16 },
+            { layerKey: "masses", name: "Entrance stairs 2", category: "stairs", description: "Bac them thu hai.", centerForward: -34.7, centerRight: 0, depth: 5.2, width: 22, baseZ: 0.55, height: 0.55, color: colors.stone, edgeSize: 0.16 },
+            { layerKey: "masses", name: "Entrance stairs 3", category: "stairs", description: "Bac them thu ba.", centerForward: -32.8, centerRight: 0, depth: 4.2, width: 18, baseZ: 1.1, height: 0.55, color: colors.stone, edgeSize: 0.16 },
+            { layerKey: "masses", name: "Entrance stairs 4", category: "stairs", description: "Bac them thu tu.", centerForward: -31.1, centerRight: 0, depth: 3.2, width: 14, baseZ: 1.65, height: 0.55, color: colors.stone, edgeSize: 0.16 }
+          ]);
+
+          addGroup([
+            {
+              layerKey: "roofs",
+              name: "Main lower roof",
+              category: "roof",
+              description: "Tang mai duoi cua khoi nha hat chinh.",
+              centerForward: -4,
+              centerRight: 0,
+              depth: 30,
+              width: 25,
+              baseZ: 20.4,
+              height: 3.1,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "Main upper roof",
+              category: "roof",
+              description: "Tang mai tren lui vao de tao silhouette bac.",
+              centerForward: -4,
+              centerRight: 0,
+              depth: 23.5,
+              width: 19.5,
+              baseZ: 23.5,
+              height: 2.8,
+              color: colors.roofAccent
+            },
+            {
+              layerKey: "roofs",
+              name: "Front attic roof",
+              category: "roof",
+              description: "Khoi mai tren sanh truoc.",
+              centerForward: -23.2,
+              centerRight: 0,
+              depth: 10,
+              width: 15.5,
+              baseZ: 15.6,
+              height: 4.2,
+              color: colors.roofAccent
+            },
+            {
+              layerKey: "roofs",
+              name: "Stage lower roof",
+              category: "roof",
+              description: "Mai khoi san khau phia sau.",
+              centerForward: 20,
+              centerRight: 0,
+              depth: 31,
+              width: 21,
+              baseZ: 25.4,
+              height: 3.7,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "Stage upper roof",
+              category: "roof",
+              description: "Tang mai tren khoi san khau.",
+              centerForward: 20,
+              centerRight: 0,
+              depth: 22,
+              width: 14.5,
+              baseZ: 29.1,
+              height: 3.4,
+              color: colors.roofAccent
+            },
+            {
+              layerKey: "roofs",
+              name: "Roof lantern",
+              category: "roof",
+              description: "Khoi dinh nho de lam day skyline.",
+              centerForward: 20,
+              centerRight: 0,
+              depth: 12,
+              width: 8.4,
+              baseZ: 32.5,
+              height: 3.0,
+              color: colors.trimShadow
+            },
+            {
+              layerKey: "roofs",
+              name: "North annex roof",
+              category: "roof",
+              description: "Mai khoi phu bac.",
+              centerForward: -12.5,
+              centerRight: -18,
+              depth: 18,
+              width: 9.3,
+              baseZ: 16.6,
+              height: 4.0,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "South annex roof",
+              category: "roof",
+              description: "Mai khoi phu nam.",
+              centerForward: -12.5,
+              centerRight: 18,
+              depth: 18,
+              width: 9.3,
+              baseZ: 16.6,
+              height: 4.0,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "North rear roof",
+              category: "roof",
+              description: "Mai khoi phu sau bac.",
+              centerForward: 20,
+              centerRight: -18,
+              depth: 20,
+              width: 7.2,
+              baseZ: 14.4,
+              height: 3.6,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "South rear roof",
+              category: "roof",
+              description: "Mai khoi phu sau nam.",
+              centerForward: 20,
+              centerRight: 18,
+              depth: 20,
+              width: 7.2,
+              baseZ: 14.4,
+              height: 3.6,
+              color: colors.roof
+            },
+            {
+              layerKey: "roofs",
+              name: "Central pediment tier 1",
+              category: "roof detail",
+              description: "Khoi bac gia pediment tren mat dung.",
+              centerForward: -30.0,
+              centerRight: 0,
+              depth: 1.6,
+              width: 7.2,
+              baseZ: 20.1,
+              height: 1.2,
+              color: colors.trim
+            },
+            {
+              layerKey: "roofs",
+              name: "Central pediment tier 2",
+              category: "roof detail",
+              description: "Tang tren cua pediment trung tam.",
+              centerForward: -30.2,
+              centerRight: 0,
+              depth: 1.3,
+              width: 4.8,
+              baseZ: 21.3,
+              height: 1.0,
+              color: colors.trim
+            },
+            {
+              layerKey: "roofs",
+              name: "North pediment",
+              category: "roof detail",
+              description: "Pediment nho tren khoi canh bac.",
+              centerForward: -29.8,
+              centerRight: -8.6,
+              depth: 1.4,
+              width: 4.2,
+              baseZ: 18.5,
+              height: 1.0,
+              color: colors.trim
+            },
+            {
+              layerKey: "roofs",
+              name: "South pediment",
+              category: "roof detail",
+              description: "Pediment nho tren khoi canh nam.",
+              centerForward: -29.8,
+              centerRight: 8.6,
+              depth: 1.4,
+              width: 4.2,
+              baseZ: 18.5,
+              height: 1.0,
+              color: colors.trim
+            }
+          ]);
+
+          [-8, 0, 8].forEach((centerRight) => {
+            addBox({
+              layerKey: "roofs",
+              name: "Roof dormer",
+              category: "roof detail",
+              description: "Dormer don gian de tang nhan dang mai.",
+              centerForward: -18.8,
+              centerRight,
+              depth: 2.6,
+              width: 2.4,
+              baseZ: 26.1,
+              height: 2.4,
+              color: colors.trim,
+              edgeSize: 0.12
+            });
+          });
+
+          addGroup([
+            { layerKey: "cornices", name: "Front stringcourse 1", category: "cornice", description: "Go noi ngang tang 1 mat tien.", centerForward: -29.6, centerRight: 0, depth: 0.95, width: 38, baseZ: 7.75, height: 0.45, color: colors.trim, edgeSize: 0.12 },
+            { layerKey: "cornices", name: "Front stringcourse 2", category: "cornice", description: "Go noi ngang tang 2 mat tien.", centerForward: -29.6, centerRight: 0, depth: 0.95, width: 38, baseZ: 14.85, height: 0.45, color: colors.trim, edgeSize: 0.12 },
+            { layerKey: "cornices", name: "Front crown cornice", category: "cornice", description: "Go noi dinh mat dung chinh.", centerForward: -29.45, centerRight: 0, depth: 1.1, width: 31.5, baseZ: 19.85, height: 0.55, color: colors.trimShadow, edgeSize: 0.14 },
+            { layerKey: "cornices", name: "North wing cornice", category: "cornice", description: "Go noi tren khoi phu bac.", centerForward: -25.4, centerRight: -18, depth: 0.8, width: 10.3, baseZ: 7.2, height: 0.35, color: colors.trim, edgeSize: 0.12 },
+            { layerKey: "cornices", name: "South wing cornice", category: "cornice", description: "Go noi tren khoi phu nam.", centerForward: -25.4, centerRight: 18, depth: 0.8, width: 10.3, baseZ: 7.2, height: 0.35, color: colors.trim, edgeSize: 0.12 },
+            { layerKey: "cornices", name: "North hall side band", category: "cornice", description: "Stringcourse doc phia canh bac khoi chinh.", centerForward: -4, centerRight: -14.85, depth: 28, width: 0.62, baseZ: 7.8, height: 0.34, color: colors.trimShadow, edgeSize: 0.1 },
+            { layerKey: "cornices", name: "South hall side band", category: "cornice", description: "Stringcourse doc phia canh nam khoi chinh.", centerForward: -4, centerRight: 14.85, depth: 28, width: 0.62, baseZ: 7.8, height: 0.34, color: colors.trimShadow, edgeSize: 0.1 },
+            { layerKey: "cornices", name: "North stage side band", category: "cornice", description: "Go noi ben khoi san khau bac.", centerForward: 20, centerRight: -12.4, depth: 30, width: 0.62, baseZ: 8.5, height: 0.34, color: colors.trimShadow, edgeSize: 0.1 },
+            { layerKey: "cornices", name: "South stage side band", category: "cornice", description: "Go noi ben khoi san khau nam.", centerForward: 20, centerRight: 12.4, depth: 30, width: 0.62, baseZ: 8.5, height: 0.34, color: colors.trimShadow, edgeSize: 0.1 }
+          ]);
+
+          [-13, -9, -5, 0, 5, 9, 13].forEach((centerRight) => {
+            addBox({
+              layerKey: "details",
+              name: "Facade pilaster",
+              category: "facade detail",
+              description: "Nhịp đứng mat dung de tranh tuc tuong phang.",
+              centerForward: -29.5,
+              centerRight,
+              depth: 1.1,
+              width: 1.15,
+              baseZ: 2.2,
+              height: 17.8,
+              color: colors.trim,
+              edgeSize: 0.12
+            });
+          });
+
+          [-18.2, 18.2].forEach((centerRight) => {
+            addBox({
+              layerKey: "details",
+              name: "Wing corner pilaster",
+              category: "facade detail",
+              description: "Pilaster goc khoi phu.",
+              centerForward: -24.8,
+              centerRight,
+              depth: 1.0,
+              width: 1.25,
+              baseZ: 2.2,
+              height: 14.2,
+              color: colors.trim,
+              edgeSize: 0.12
+            });
+          });
+
+          [-17.2, 17.2].forEach((centerRight) => {
+            addBox({
+              layerKey: "details",
+              name: "Facade statue plinth",
+              category: "ornament proxy",
+              description: "Khoi de tuong rut gon de giu nhan dien mat dung.",
+              centerForward: -30.8,
+              centerRight,
+              depth: 1.0,
+              width: 1.9,
+              baseZ: 15.3,
+              height: 2.1,
+              color: colors.trim,
+              edgeSize: 0.1
+            });
+          });
+
+          addBox({
+            layerKey: "details",
+            name: "Central crest block",
+            category: "ornament proxy",
+            description: "Khoi huy hieu rut gon tren dinh mat dung.",
+            centerForward: -24.9,
+            centerRight: 0,
+            depth: 1.6,
+            width: 4.3,
+            baseZ: 20.0,
+            height: 2.2,
+            color: colors.trim,
+            edgeSize: 0.1
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "doors",
+            category: "door",
+            name: "Main entrance door",
+            description: "Cua vao chinh mat tien.",
+            centerForward: -30.25,
+            positions: [-6.2, 0, 6.2],
+            depth: 0.38,
+            width: 3.8,
+            baseZ: 2.2,
+            height: 6.9,
+            fillColor: colors.bronze,
+            fillEdgeColor: [158, 126, 101, 0.45],
+            headerHeight: 0.42,
+            frameDepth: 1.18,
+            frameWidthOffset: 0.85,
+            frameHeightOffset: 0.48,
+            frameColor: colors.trimShadow
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "doors",
+            category: "door",
+            name: "Annex entrance door",
+            description: "Cua vao khoi phu mat truoc.",
+            centerForward: -25.6,
+            positions: [-18.0, 18.0],
+            depth: 0.36,
+            width: 2.7,
+            baseZ: 2.2,
+            height: 5.1,
+            fillColor: colors.bronze,
+            fillEdgeColor: [158, 126, 101, 0.45],
+            headerHeight: 0.34,
+            frameDepth: 1.0,
+            frameWidthOffset: 0.7,
+            frameHeightOffset: 0.38,
+            frameColor: colors.trimShadow
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "Front lower window",
+            description: "Cua so tang 1 mat tien.",
+            centerForward: -30.08,
+            positions: [-16.0, -11.4, 11.4, 16.0],
+            depth: 0.28,
+            width: 2.55,
+            baseZ: 5.95,
+            height: 3.7,
+            fillColor: colors.glassShadow,
+            fillEdgeColor: [171, 190, 207, 0.35],
+            headerHeight: 0.26,
+            frameDepth: 0.95,
+            frameWidthOffset: 0.62,
+            frameHeightOffset: 0.34
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "Front upper window",
+            description: "Cua so tang 2 trung tam mat tien.",
+            centerForward: -29.96,
+            positions: [-10, -5, 0, 5, 10],
+            depth: 0.3,
+            width: 2.9,
+            baseZ: 10.7,
+            height: 4.5,
+            fillColor: colors.glass,
+            fillEdgeColor: [171, 190, 207, 0.35],
+            headerHeight: 0.28,
+            frameDepth: 1.0,
+            frameWidthOffset: 0.75,
+            frameHeightOffset: 0.42
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "Wing upper window",
+            description: "Cua so tren khoi phu mat truoc.",
+            centerForward: -25.72,
+            positions: [-18.0, 18.0],
+            depth: 0.3,
+            width: 3.0,
+            baseZ: 8.9,
+            height: 4.5,
+            fillColor: colors.glass,
+            fillEdgeColor: [171, 190, 207, 0.35],
+            headerHeight: 0.28,
+            frameDepth: 0.95,
+            frameWidthOffset: 0.7,
+            frameHeightOffset: 0.38
+          });
+
+          addFrontOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "Rear stage window",
+            description: "Cua so phia sau khoi san khau.",
+            centerForward: 35.3,
+            positions: [-6.5, 0, 6.5],
+            depth: 0.34,
+            width: 3.5,
+            baseZ: 8.3,
+            height: 5.2,
+            fillColor: colors.glass,
+            fillEdgeColor: [171, 190, 207, 0.35],
+            headerHeight: 0.28,
+            frameDepth: 1.0,
+            frameWidthOffset: 0.75,
+            frameHeightOffset: 0.38,
+            sillHeight: 0.26
+          });
+
+          addSideOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "North lower side window",
+            description: "Cua so tang 1 ben bac.",
+            centerRight: -14.95,
+            positions: [-15.5, -8.5, -1.5, 9, 18, 26],
+            depth: 2.7,
+            width: 0.24,
+            baseZ: 6.25,
+            height: 4.1,
+            insetOffset: 0.24,
+            fillColor: colors.glassShadow,
+            fillEdgeColor: [171, 190, 207, 0.35]
+          });
+
+          addSideOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "South lower side window",
+            description: "Cua so tang 1 ben nam.",
+            centerRight: 14.95,
+            positions: [-15.5, -8.5, -1.5, 9, 18, 26],
+            depth: 2.7,
+            width: 0.24,
+            baseZ: 6.25,
+            height: 4.1,
+            insetOffset: -0.24,
+            fillColor: colors.glassShadow,
+            fillEdgeColor: [171, 190, 207, 0.35]
+          });
+
+          addSideOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "North upper side window",
+            description: "Cua so tang 2 ben bac.",
+            centerRight: -14.95,
+            positions: [-14, -6, 2, 12],
+            depth: 2.35,
+            width: 0.22,
+            baseZ: 11.55,
+            height: 4.2,
+            insetOffset: 0.22,
+            fillColor: colors.glass,
+            fillEdgeColor: [171, 190, 207, 0.35]
+          });
+
+          addSideOpeningSeries({
+            layerKey: "windows",
+            category: "window",
+            name: "South upper side window",
+            description: "Cua so tang 2 ben nam.",
+            centerRight: 14.95,
+            positions: [-14, -6, 2, 12],
+            depth: 2.35,
+            width: 0.22,
+            baseZ: 11.55,
+            height: 4.2,
+            insetOffset: -0.22,
+            fillColor: colors.glass,
+            fillEdgeColor: [171, 190, 207, 0.35]
+          });
+
+          addGroup([
+            {
+              layerKey: "balconies",
+              name: "Main balcony slab",
+              category: "balcony",
+              description: "San ban cong lon tren sanh vao.",
+              centerForward: -31.85,
+              centerRight: 0,
+              depth: 3.2,
+              width: 18.4,
+              baseZ: 8.55,
+              height: 0.46,
+              color: colors.stone,
+              edgeSize: 0.1
+            },
+            {
+              layerKey: "balconies",
+              name: "North side balcony slab",
+              category: "balcony",
+              description: "San ban cong khoi phu bac.",
+              centerForward: -28.6,
+              centerRight: -18,
+              depth: 2.5,
+              width: 6.4,
+              baseZ: 8.55,
+              height: 0.4,
+              color: colors.stone,
+              edgeSize: 0.1
+            },
+            {
+              layerKey: "balconies",
+              name: "South side balcony slab",
+              category: "balcony",
+              description: "San ban cong khoi phu nam.",
+              centerForward: -28.6,
+              centerRight: 18,
+              depth: 2.5,
+              width: 6.4,
+              baseZ: 8.55,
+              height: 0.4,
+              color: colors.stone,
+              edgeSize: 0.1
+            },
+            {
+              layerKey: "balconies",
+              name: "Main front rail",
+              category: "balcony",
+              description: "Lan can phia truoc ban cong chinh.",
+              centerForward: -33.15,
+              centerRight: 0,
+              depth: 0.34,
+              width: 18.6,
+              baseZ: 8.98,
+              height: 0.95,
+              color: colors.rail,
+              edgeSize: 0.08
+            },
+            {
+              layerKey: "balconies",
+              name: "North side front rail",
+              category: "balcony",
+              description: "Lan can truoc ban cong khoi phu bac.",
+              centerForward: -29.7,
+              centerRight: -18,
+              depth: 0.28,
+              width: 6.5,
+              baseZ: 8.92,
+              height: 0.88,
+              color: colors.rail,
+              edgeSize: 0.08
+            },
+            {
+              layerKey: "balconies",
+              name: "South side front rail",
+              category: "balcony",
+              description: "Lan can truoc ban cong khoi phu nam.",
+              centerForward: -29.7,
+              centerRight: 18,
+              depth: 0.28,
+              width: 6.5,
+              baseZ: 8.92,
+              height: 0.88,
+              color: colors.rail,
+              edgeSize: 0.08
+            }
+          ]);
+
+          [-9.2, -4.6, 0, 4.6, 9.2].forEach((centerRight) => {
+            addBox({
+              layerKey: "balconies",
+              name: "Main balcony post",
+              category: "balcony",
+              description: "Post lan can lap lai de ban cong doc ro hon.",
+              centerForward: -33.0,
+              centerRight,
+              depth: 0.34,
+              width: 0.24,
+              baseZ: 8.98,
+              height: 0.95,
+              color: colors.rail,
+              edgeSize: 0.06
+            });
+          });
+
+          [-21.0, -15.0, 15.0, 21.0].forEach((centerRight) => {
+            addBox({
+              layerKey: "balconies",
+              name: "Side balcony post",
+              category: "balcony",
+              description: "Post lan can cho ban cong canh.",
+              centerForward: -29.55,
+              centerRight,
+              depth: 0.28,
+              width: 0.22,
+              baseZ: 8.92,
+              height: 0.88,
+              color: colors.rail,
+              edgeSize: 0.06
+            });
+          });
+
+          function updateHudCounts() {
+            let total = 0;
+            Object.keys(layerMeta).forEach((key) => {
+              total += layerMeta[key].count;
+              const countNode = document.querySelector(`[data-count="${key}"]`);
+              if (countNode) {
+                countNode.textContent = `${layerMeta[key].count} graphics`;
+              }
+            });
+            document.getElementById("totalCount").textContent = `${total} graphics`;
+          }
+
+          const demoCamera = {
+            position: {
+              longitude: 106.70272,
+              latitude: 10.77636,
+              z: 145
+            },
+            heading: footprintMainAxisHeadingDeg,
+            tilt: 72
+          };
+
+          const orbit = {
+            active: false,
+            frameId: null,
+            angle: footprintMainAxisHeadingDeg,
+            radiusMeters: 115,
+            heightMeters: 92,
+            speedDegPerSecond: 12,
+            lastTime: 0
+          };
+
+          function setOrbitStatus(message) {
+            const status = document.getElementById("orbitStatus");
+            if (status) {
+              status.textContent = message;
+            }
+          }
+
+          function applyOrbitCamera(angleDeg) {
+            const radians = (angleDeg * Math.PI) / 180;
+            const east = Math.sin(radians) * orbit.radiusMeters;
+            const north = Math.cos(radians) * orbit.radiusMeters;
+            const camera = view.camera.clone();
+
+            camera.position = pointFromOffset(east, north, baseElevation + orbit.heightMeters);
+            camera.heading = (angleDeg + 180) % 360;
+            camera.tilt = 68;
+            view.camera = camera;
+          }
+
+          function orbitFrame(timestamp) {
+            if (!orbit.active) return;
+            if (!orbit.lastTime) {
+              orbit.lastTime = timestamp;
+            }
+
+            const elapsedSeconds = (timestamp - orbit.lastTime) / 1000;
+            orbit.lastTime = timestamp;
+            orbit.angle = (orbit.angle + orbit.speedDegPerSecond * elapsedSeconds) % 360;
+            applyOrbitCamera(orbit.angle);
+            orbit.frameId = requestAnimationFrame(orbitFrame);
+          }
+
+          function startOrbit() {
+            if (orbit.active) return;
+            orbit.active = true;
+            orbit.lastTime = 0;
+            document.getElementById("orbitToggle").classList.add("is-active");
+            document.getElementById("orbitToggle").textContent = "Dừng xoay";
+            setOrbitStatus("Đang xoay 360 quanh mô hình.");
+            orbit.frameId = requestAnimationFrame(orbitFrame);
+          }
+
+          function stopOrbit(message = "Đã dừng xoay 360.") {
+            if (orbit.frameId) {
+              cancelAnimationFrame(orbit.frameId);
+              orbit.frameId = null;
+            }
+            orbit.active = false;
+            orbit.lastTime = 0;
+            document.getElementById("orbitToggle").classList.remove("is-active");
+            document.getElementById("orbitToggle").textContent = "Xoay 360";
+            setOrbitStatus(message);
+          }
+
+          function bindOrbitControls() {
+            document.getElementById("orbitToggle").addEventListener("click", () => {
+              if (orbit.active) {
+                stopOrbit();
+              } else {
+                startOrbit();
+              }
+            });
+
+            document.getElementById("orbitReset").addEventListener("click", () => {
+              stopOrbit("Đã về góc demo.");
+              view.goTo(demoCamera, { duration: 700 });
+            });
+
+            view.on("drag", () => {
+              if (orbit.active) {
+                stopOrbit("Đã dừng để thao tác thủ công.");
+              }
+            });
+
+            view.on("mouse-wheel", () => {
+              if (orbit.active) {
+                stopOrbit("Đã dừng để thao tác thủ công.");
+              }
+            });
+          }
+
+          function bindLayerToggles() {
+            document.querySelectorAll("[data-layer]").forEach((checkbox) => {
+              checkbox.addEventListener("change", (event) => {
+                const key = event.target.dataset.layer;
+                modelLayers[key].visible = event.target.checked;
+              });
+            });
+
+            document.querySelectorAll("[data-reference-layer]").forEach((checkbox) => {
+              checkbox.addEventListener("change", (event) => {
+                if (event.target.dataset.referenceLayer === "footprint") {
+                  referenceFootprintLayer.visible = event.target.checked;
+                }
+              });
+            });
+          }
+
+          updateHudCounts();
+          bindLayerToggles();
+          bindOrbitControls();
+        }
+      );
+    </script>
+  </body>
+</html>

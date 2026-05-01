@@ -1,0 +1,5 @@
+Nhóm nộp trực tiếp link GitHub repository chứa folder LAB02.
+
+Nếu hệ thống yêu cầu attach thêm file .txt, có thể thay dòng dưới bằng link repository cuối cùng:
+
+GitHub repository: <dien-link-github-cua-nhom>

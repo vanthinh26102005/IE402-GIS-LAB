@@ -1,0 +1,50 @@
+HƯỚNG DẪN CHẠY NHANH - GIS LAB 02
+
+1. MỞ DEMO CHÍNH
+--------------------------------------------------
+Mở Terminal/Command Prompt tại thư mục LAB02 rồi chạy:
+
+  python3 -m http.server 8080
+
+Nếu dùng Windows:
+
+  python -m http.server 8080
+
+Sau đó mở trình duyệt:
+
+  http://localhost:8080
+
+File chính cần demo/nộp là:
+
+  index.html
+
+2. CÁC TRANG PHỤ
+--------------------------------------------------
+- viewers/geojson_layer_check.html
+  Kiểm tra GeoJSON tầng khối bằng ArcGIS GeoJSONLayer.
+
+- viewers/gltf_lod3_check.html
+  Kiểm tra glTF dựng từ footprint/shapefile.
+
+- viewers/reference_model.html
+  Kiểm tra model SketchUp tham chiếu đã export sang GLB.
+  Trang này chỉ là tham chiếu, không phải demo chính.
+
+3. KIỂM TRA KHI DEMO
+--------------------------------------------------
+- Bản đồ 3D ArcGIS JS mở được.
+- Công trình nằm đúng khu vực Nhà hát Thành phố Hồ Chí Minh.
+- Có thể bật/tắt từng nhóm LoD3: khối chính, mái, cửa, cửa sổ, ban công, gờ nổi.
+- Có popup khi click vào các khối.
+- Nút Camera 360 xoay quanh mô hình.
+- Checkbox Footprint GeoJSON hiển thị outline tham chiếu.
+
+4. FILE QUAN TRỌNG
+--------------------------------------------------
+- index.html
+- data/geojson/NhaHatThanhPho_footprint.geojson
+- data/geojson/NhaHat_ThanhPho_LoD3_wgs84.geojson
+- data/lod3_components.json
+- docs/bao_cao_tom_tat.md
+- docs/STRUCTURE.md
+- docs/SUBMISSION_CHECKLIST.md

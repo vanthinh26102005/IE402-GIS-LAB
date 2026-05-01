@@ -1,0 +1,303 @@
+:root {
+  --bg-dark: #0a0e17;
+  --bg-panel: rgba(20, 27, 45, 0.75);
+  --bg-panel-solid: #141b2d;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-secondary: #f59e0b;
+  --border: rgba(255, 255, 255, 0.1);
+  
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-body);
+  color: var(--text-main);
+  background-color: var(--bg-dark);
+  overflow: hidden;
+}
+
+/* App Container */
+#app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+/* Main View */
+#viewDiv {
+  flex-grow: 1;
+  height: 100%;
+  position: relative;
+}
+
+/* Override ArcGIS UI styles to match dark premium theme */
+.esri-ui {
+  font-family: var(--font-body) !important;
+}
+.esri-widget, .esri-widget-button, .esri-menu, .esri-popup__main-container {
+  background-color: var(--bg-panel-solid) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+.esri-widget-button:hover {
+  background-color: #1e293b !important;
+  color: var(--accent-hover) !important;
+}
+.esri-legend__layer-caption {
+  display: none;
+}
+.esri-legend__layer-cell--info {
+  color: var(--text-muted) !important;
+}
+
+/* Sidebar */
+#sidebar {
+  width: 320px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(0,0,0,0) 100%);
+}
+
+.sidebar-header .title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.sidebar-header .subtitle {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: var(--accent-secondary);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-content {
+  padding: 20px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.viewer-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.viewer-tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.viewer-tabs a:hover {
+  background: rgba(99, 102, 241, 0.18);
+}
+
+.viewer-tabs a.is-active {
+  border-color: rgba(245, 158, 11, 0.72);
+  background: rgba(245, 158, 11, 0.2);
+  color: #fff7ed;
+}
+
+/* Custom Scrollbar for sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Info Card */
+.info-card {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.info-value {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Toggle Section */
+.layer-toggle-section h3 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  margin: 0 0 16px 0;
+  color: var(--text-main);
+}
+
+.toggle-row {
+  margin-bottom: 12px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-label:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+.toggle-label input[type="checkbox"] {
+  appearance: none;
+  background-color: transparent;
+  margin: 0 12px 0 0;
+  font: inherit;
+  color: currentColor;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-muted);
+  border-radius: 4px;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  background-color: var(--text-main);
+}
+
+.toggle-label input[type="checkbox"]:checked {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+.toggle-label input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+.toggle-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.sidebar-footer p { margin: 0; }
+
+/* Loading Overlay */
+#loadingOverlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-dark);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loadingOverlay p {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  letter-spacing: 1px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #app-container {
+    flex-direction: column-reverse;
+  }
+  #sidebar {
+    width: 100%;
+    height: 40%;
+    border-right: none;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar-content {
+    padding: 12px;
+  }
+}
