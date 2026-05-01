@@ -1,0 +1,80 @@
+{
+  "project": "GIS Lab 02 - Nha hat Thanh pho Ho Chi Minh",
+  "lod": "LoD3 academic model",
+  "coordinate_order": "[longitude, latitude]",
+  "site": {
+    "name": "Nha hat Thanh pho Ho Chi Minh",
+    "aliases": [
+      "Nha hat Lon Sai Gon",
+      "Saigon Opera House",
+      "Municipal Theatre of Ho Chi Minh City"
+    ],
+    "latitude": 10.776783598907993,
+    "longitude": 106.70317240490061,
+    "address": "So 7 Cong truong Lam Son, Quan 1, Thanh pho Ho Chi Minh"
+  },
+  "main_scene": {
+    "file": "index.html",
+    "sdk": "ArcGIS Maps SDK for JavaScript 4.29",
+    "approach": "GraphicsLayer + Polygon + ExtrudeSymbol3DLayer",
+    "total_graphics": 183
+  },
+  "layers": [
+    {
+      "key": "masses",
+      "name": "Khoi chinh va bac them",
+      "graphics_count": 8,
+      "lod3_role": "Tach de nen, sanh vao, khoi nha hat chinh va khoi san khau sau."
+    },
+    {
+      "key": "annexes",
+      "name": "Khoi phu",
+      "graphics_count": 6,
+      "lod3_role": "Tao cac khoi canh va khoi hau can rieng, tranh mot footprint duy nhat."
+    },
+    {
+      "key": "roofs",
+      "name": "Mai",
+      "graphics_count": 17,
+      "lod3_role": "The hien mai bac, mai phu, dormer va khoi dinh."
+    },
+    {
+      "key": "windows",
+      "name": "Cua so",
+      "graphics_count": 96,
+      "lod3_role": "Lap lai cac cua so mat truoc, mat ben va mat sau, co frame va sill."
+    },
+    {
+      "key": "doors",
+      "name": "Cua ra vao",
+      "graphics_count": 20,
+      "lod3_role": "Tach cua chinh, cua khoi phu, frame, panel va lintel."
+    },
+    {
+      "key": "balconies",
+      "name": "Ban cong",
+      "graphics_count": 15,
+      "lod3_role": "Tach san ban cong, lan can va cot lan can."
+    },
+    {
+      "key": "cornices",
+      "name": "Go noi",
+      "graphics_count": 9,
+      "lod3_role": "Bo sung stringcourse va cornice cho mat dung."
+    },
+    {
+      "key": "details",
+      "name": "Chi tiet mat dung",
+      "graphics_count": 12,
+      "lod3_role": "Pilaster, khoi huy hieu va ornament proxy."
+    }
+  ],
+  "source_data_files": [
+    "data/geojson/NhaHatThanhPho_footprint.geojson",
+    "data/geojson/NhaHat_ThanhPho_LoD3_wgs84.geojson",
+    "data/geojson/NhaHat_ThanhPho_LoD3.geojson",
+    "data/model/NhaHat_ThanhPho_LoD3.gltf",
+    "data/model/reference/nhahat_reference.glb",
+    "data/shapefile/NhaHat_Footprint.shp"
+  ]
+}

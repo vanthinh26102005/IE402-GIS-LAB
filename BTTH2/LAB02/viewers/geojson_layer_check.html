@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Nhà hát Thành phố HCM - Mô hình 3D LoD3</title>
+  <meta name="description" content="Mô hình 3D LoD3 của Nhà hát Thành phố Hồ Chí Minh sử dụng ArcGIS JS API">
+  
+  <!-- Font CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- ArcGIS JS API CSS (Dark Theme) -->
+  <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/dark/main.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../style.css">
+  
+  <!-- ArcGIS JS API Script -->
+  <script src="https://js.arcgis.com/4.29/"></script>
+</head>
+<body>
+
+  <!-- App Container -->
+  <div id="app-container">
+    
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="title">Nhà Hát Lớn Sài Gòn</h1>
+        <p class="subtitle">Mô hình 3D LoD3 Extrusion</p>
+      </div>
+
+      <div class="sidebar-content">
+        <nav class="viewer-tabs" aria-label="Chuyen trang viewer">
+          <a href="../index.html">ArcGIS chính</a>
+          <a class="is-active" href="geojson_layer_check.html">GeoJSON</a>
+          <a href="gltf_lod3_check.html">glTF LoD3</a>
+          <a href="reference_model.html">Model tham chiếu</a>
+        </nav>
+
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">Vị trí</span>
+            <span class="info-value">Q.1, TP.HCM</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Chiều cao</span>
+            <span class="info-value">26.0 m</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Mức độ chi tiết</span>
+            <span class="info-value">LoD 3 (Tầng khối)</span>
+          </div>
+        </div>
+
+        <div class="layer-toggle-section">
+          <h3>Các tầng khối</h3>
+          <div id="layer-toggles">
+            <!-- Checkboxes will be populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <p>GIS Lab 2 &copy; 2026</p>
+      </div>
+    </aside>
+
+    <!-- Main View -->
+    <main id="viewDiv">
+      <!-- Loading Overlay -->
+      <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Đang tải mô hình 3D...</p>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/SceneView",
+      "esri/layers/GeoJSONLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/Home",
+      "esri/widgets/Compass",
+      "esri/widgets/NavigationToggle",
+      "esri/widgets/Popup"
+    ], function (Map, SceneView, GeoJSONLayer, Legend, Home, Compass, NavigationToggle, Popup) {
+
+      // Define unique colors and extrusion heights for each part
+      const renderer = {
+        type: "unique-value",
+        field: "part",
+        defaultSymbol: {
+          type: "polygon-3d",
+          symbolLayers: [{
+            type: "extrude",
+            size: 1,
+            material: { color: "#ffffff" },
+            edges: { type: "solid", color: [40, 40, 40, 0.5] }
+          }]
+        },
+        uniqueValueInfos: [
+          {
+            value: "base",
+            label: "Đá nền (Base)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 4.68, // podium height - base height
+                material: { color: "#544C46" },
+                edges: { type: "solid", color: [30, 30, 30, 0.8] }
+              }]
+            }
+          },
+          {
+            value: "podium",
+            label: "Khối đế (Podium)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 6.24, // body_lower - podium
+                material: { color: "#D4C2A0" },
+                edges: { type: "solid", color: [50, 50, 50, 0.6] }
+              }]
+            }
+          },
+          {
+            value: "body_lower",
+            label: "Thân dưới (Lower Body)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 6.76, // body_mid - body_lower
+                material: { color: "#C77370" },
+                edges: { type: "solid", color: [50, 50, 50, 0.6] }
+              }]
+            }
+          },
+          {
+            value: "body_mid",
+            label: "Thân giữa (Mid Body)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 5.20, // body_upper - body_mid
+                material: { color: "#AB5150" },
+                edges: { type: "solid", color: [40, 40, 40, 0.6] }
+              }]
+            }
+          },
+          {
+            value: "body_upper",
+            label: "Thân trên (Upper Body)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 3.12, // roof - body_upper
+                material: { color: "#943D40" },
+                edges: { type: "solid", color: [40, 40, 40, 0.6] }
+              }]
+            }
+          },
+          {
+            value: "roof",
+            label: "Mái (Roof)",
+            symbol: {
+              type: "polygon-3d",
+              symbolLayers: [{
+                type: "extrude",
+                size: 1.0, // cap
+                material: { color: "#DBC9B5" },
+                edges: { type: "solid", color: [40, 40, 40, 0.6] }
+              }]
+            }
+          }
+        ]
+      };
+
+      // Define Popup Template
+      const popupTemplate = {
+        title: "{name} — Phân khu: {part}",
+        content: [
+          {
+            type: "fields",
+            fieldInfos: [
+              { fieldName: "part", label: "Mã tầng" },
+              { fieldName: "height_m", label: "Cao độ bắt đầu (m)", format: { places: 2 } },
+              { fieldName: "total_height_m", label: "Tổng chiều cao công trình (m)" }
+            ]
+          }
+        ]
+      };
+
+      // Define Labeling Info
+      const labelingInfo = [{
+        labelExpressionInfo: { expression: "$feature.part + ' (' + Text($feature.height_m, '#.#') + 'm)'" },
+        symbol: {
+          type: "label-3d",
+          symbolLayers: [{
+            type: "text",
+            material: { color: "white" },
+            halo: { color: "black", size: 1.5 },
+            size: 10
+          }]
+        }
+      }];
+
+      // Calculate absolute offset based on height_m
+      // Note: GeoJSONLayer doesn't support complex visual variables for extrusion offset easily if it's dynamic
+      // But we can use absolute-height and the geometry's Z value if it had it.
+      // Since our GeoJSON is flat (2D), we map the 'height_m' attribute to the elevation.
+      
+      const geojsonLayer = new GeoJSONLayer({
+        url: "../data/geojson/NhaHat_ThanhPho_LoD3_wgs84.geojson",
+        title: "Khối kiến trúc",
+        renderer: renderer,
+        popupTemplate: popupTemplate,
+        labelingInfo: labelingInfo,
+        elevationInfo: {
+          mode: "relative-to-ground",
+          featureExpressionInfo: {
+            expression: "$feature.height_m"
+          }
+        }
+      });
+
+      // Create Map
+      const map = new Map({
+        basemap: "dark-gray-vector",
+        ground: "world-elevation",
+        layers: [geojsonLayer]
+      });
+
+      // Create SceneView
+      const view = new SceneView({
+        container: "viewDiv",
+        map: map,
+        camera: {
+          position: {
+            x: 106.70317240490061, // longitude
+            y: 10.7745,            // latitude (offset slightly south for better view angle)
+            z: 250                 // height in meters
+          },
+          tilt: 65,
+          heading: 0 // looking north
+        },
+        popup: new Popup({
+          defaultPopupTemplateEnabled: true,
+          dockEnabled: true,
+          dockOptions: {
+            buttonEnabled: false,
+            breakpoint: false,
+            position: "bottom-right"
+          }
+        })
+      });
+
+      // Hide loading overlay when layer finishes loading
+      view.whenLayerView(geojsonLayer).then(function() {
+        document.getElementById('loadingOverlay').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loadingOverlay').style.display = 'none';
+        }, 500);
+      });
+
+      // Add Widgets
+      const legend = new Legend({
+        view: view,
+        style: "card"
+      });
+      view.ui.add(legend, "bottom-left");
+
+      const homeBtn = new Home({
+        view: view
+      });
+      view.ui.add(homeBtn, "top-left");
+
+      const compass = new Compass({
+        view: view
+      });
+      view.ui.add(compass, "top-left");
+      
+      const navToggle = new NavigationToggle({
+        view: view
+      });
+      view.ui.add(navToggle, "top-left");
+
+      // Setup custom layer toggles in sidebar
+      view.when(() => {
+        const toggleContainer = document.getElementById("layer-toggles");
+        
+        // Define parts to toggle
+        const parts = ["base", "podium", "body_lower", "body_mid", "body_upper", "roof"];
+        
+        parts.forEach(part => {
+          const row = document.createElement("div");
+          row.className = "toggle-row";
+          
+          const label = document.createElement("label");
+          label.className = "toggle-label";
+          label.innerHTML = `
+            <input type="checkbox" checked data-part="${part}">
+            <span class="toggle-text">${part.replace('_', ' ').toUpperCase()}</span>
+          `;
+          
+          row.appendChild(label);
+          toggleContainer.appendChild(row);
+        });
+
+        // Add event listener for toggles
+        toggleContainer.addEventListener("change", (e) => {
+          if (e.target.tagName === "INPUT") {
+            updateDefinitionExpression();
+          }
+        });
+
+        function updateDefinitionExpression() {
+          const checkboxes = toggleContainer.querySelectorAll("input:checked");
+          const selectedParts = Array.from(checkboxes).map(cb => cb.getAttribute("data-part"));
+          
+          if (selectedParts.length === 0) {
+            geojsonLayer.definitionExpression = "1=0"; // hide all
+          } else {
+            const expression = selectedParts.map(part => `part = '${part}'`).join(" OR ");
+            geojsonLayer.definitionExpression = expression;
+          }
+        }
+      });
+
+    });
+  </script>
+</body>
+</html>
